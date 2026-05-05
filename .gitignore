@@ -1,0 +1,17 @@
+.env
+/records
+data/conversation_logs/
+data/audio_out/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+memory/user_memory.json
+
