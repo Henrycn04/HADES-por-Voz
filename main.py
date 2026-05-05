@@ -6,6 +6,20 @@ from pattern_extraction.pattern_extractor import PatternExtractor
 from interpretation.context_interpreter import ContextInterpreter
 from voice.tts import GeminiTTS
 
+def ensure_profile(memory_manager: MemoryManager) -> bool:
+    if memory_manager.has_active_profile():
+        return True
+
+    print("\nNo hay perfil activo todavía.")
+    profile_name = input("¿Qué perfil querés usar o crear?: ").strip()
+
+    if not profile_name:
+        print("No se seleccionó ningún perfil.")
+        return False
+
+    memory_manager.set_profile(profile_name)
+    print(f"Perfil activo: {memory_manager.get_active_profile_name()}")
+    return True
 
 def print_header():
     print("\n" + "=" * 64)
@@ -35,11 +49,14 @@ def main():
 
     while True:
         print_header()
+        print(f"Perfil activo: {memory_manager.get_active_profile_name()}")
         print("1. Conversación inicial para aprender patrones")
         print("2. Probar una situación actual")
         print("3. Ver memoria JSON")
         print("4. Probar TTS")
-        print("5. Salir")
+        print("5. Cambiar o crear perfil")
+        print("6. Ver perfiles existentes")
+        print("7. Salir")
 
         option = input("\nOpción: ").strip()
 
@@ -47,6 +64,8 @@ def main():
             conversation_agent.run_initial_conversation()
 
         elif option == "2":
+            if not ensure_profile(memory_manager):
+                continue
             current_context = input(
                 "\nDescriba la situación actual. Ejemplo: "
                 "Son las 9:40 PM, llegué tarde, tomé café y mañana tengo agenda libre.\n\nSituación: "
@@ -67,6 +86,9 @@ def main():
             tts.speak(response, filename="hades_context_response.wav")
 
         elif option == "3":
+            if not ensure_profile(memory_manager):
+                continue
+
             print("\n--- Memoria actual ---")
             print(memory_manager.pretty_memory())
 
@@ -76,11 +98,27 @@ def main():
             tts.speak(text, filename="hades_tts_test.wav")
 
         elif option == "5":
+            profile_name = input("\nNombre del perfil a usar o crear: ").strip()
+
+            if profile_name:
+                memory_manager.set_profile(profile_name)
+                print(f"Perfil activo: {memory_manager.get_active_profile_name()}")
+            else:
+                print("No se cambió el perfil.")
+
+        elif option == "6":
+            profiles = memory_manager.list_profiles()
+
+            if not profiles:
+                print("\nTodavía no hay perfiles guardados.")
+            else:
+                print("\nPerfiles existentes:")
+                for profile in profiles:
+                    print(f"- {profile}")
+
+        elif option == "7":
             print("\nCerrando HADES")
             break
-
-        else:
-            print("\nOpción inválida.")
 
 
 if __name__ == "__main__":

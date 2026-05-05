@@ -19,6 +19,6 @@ class Settings:
     enable_tts: bool = os.getenv("HADES_ENABLE_TTS", "true").lower() == "true"
     autoplay_tts: bool = os.getenv("HADES_AUTOPLAY_TTS", "true").lower() == "true"
 
-    memory_path: Path = base_dir / "memory" / "user_memory.json"
+    memory_dir: Path = base_dir / "memory"
     logs_dir: Path = base_dir / "data" / "conversation_logs"
     audio_dir: Path = base_dir / "data" / "audio_out"

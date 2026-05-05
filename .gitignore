@@ -13,5 +13,4 @@ env/
 Thumbs.db
 .vscode/
 .idea/
-memory/user_memory.json
-
+memory/_*.json

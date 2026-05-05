@@ -19,17 +19,55 @@ class ConversationAgent:
         self.tts = tts
         self.logs_dir = logs_dir
         self.logs_dir.mkdir(parents=True, exist_ok=True)
+        
+    def _save_transcript(self, transcript: str) -> None:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        profile = self.memory_manager.get_active_profile_name()
+        path = self.logs_dir / f"conversation_{profile}_{stamp}.txt"
+        path.write_text(transcript, encoding="utf-8")
 
     def run_initial_conversation(self) -> dict:
+        if not self.memory_manager.has_active_profile():
+            profile_name = input(
+                "\nHADES: Primero, ¿con qué nombre quiere guardar este perfil?\nUsuario: "
+            ).strip()
+
+            self.memory_manager.set_profile(profile_name)
+
+            greeting = (
+                f"Perfecto, voy a guardar esta memoria como perfil de "
+                f"{self.memory_manager.get_active_profile_name()}."
+            )
+
+            print(f"\nHADES: {greeting}")
+            self.tts.speak(greeting, filename="hades_profile_created.wav")
+
+            transcript_lines: list[str] = [
+                "HADES: Primero, ¿con qué nombre quiere guardar este perfil?",
+                f"Usuario: {self.memory_manager.get_active_profile_name()}",
+                f"HADES: {greeting}"
+            ]
+
+        else:
+            greeting = (
+                f"Perfecto, voy a continuar usando el perfil de "
+                f"{self.memory_manager.get_active_profile_name()}."
+            )
+
+            print(f"\nHADES: {greeting}")
+            self.tts.speak(greeting, filename="hades_profile_active.wav")
+
+            transcript_lines: list[str] = [
+                f"HADES: {greeting}"
+            ]
+
         questions = [
-            "Hola, soy HADES. Quiero conocerle un poco para entender mejor tus rutinas. ¿Cómo suele ser un día normal para usted?",
+            "Hola, soy HADES. Quiero conocerle un poco para entender mejor sus rutinas. ¿Cómo suele ser un día normal para usted?",
             "¿Qué cosas hace casi siempre a la misma hora o en el mismo orden?",
             "¿Qué cosas suelen cambiar esa rutina? Por ejemplo cansancio, café, estrés, estudio, trabajo o planes.",
-            "Cuando rompe una rutina, ¿normalmente qué significa? ¿Que querés descansar, seguir trabajando, distraerte, evitar algo o resolver algo pendiente?",
-            "¿Qué te gustaría que un asistente doméstico entienda de usted sin tener que explicárselo cada vez?"
+            "Cuando rompe una rutina, ¿normalmente qué significa? ¿Que quiere descansar, seguir trabajando, distraerse, evitar algo o resolver algo pendiente?",
+            "¿Qué le gustaría que un asistente doméstico entienda de usted sin tener que explicárselo cada vez?"
         ]
-
-        transcript_lines: list[str] = []
 
         for question in questions:
             print(f"\nHADES: {question}")
@@ -51,8 +89,3 @@ class ConversationAgent:
         self.tts.speak(final_msg, filename="hades_memory_summary.wav")
 
         return memory
-
-    def _save_transcript(self, transcript: str) -> None:
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        path = self.logs_dir / f"conversation_{stamp}.txt"
-        path.write_text(transcript, encoding="utf-8")
