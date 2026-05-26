@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Procedimiento del Investigador — HADES por Voz</title>
+<style>
+:root { --primary:#0F3B82; --primary-light:#2A5BAA; --bg-body:#F4F7F6; --bg-card:#FFFFFF; --text-main:#333333; --text-muted:#666666; --border-color:#E2E8F0; --radius:8px; --shadow:0 4px 6px rgba(0,0,0,0.05); }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Inter','Segoe UI',system-ui,sans-serif; background-color:var(--bg-body); color:var(--text-main); line-height:1.6; padding:40px 20px; display:flex; justify-content:center; }
+.container { max-width:800px; width:100%; }
+.card { background:var(--bg-card); border-radius:var(--radius); box-shadow:var(--shadow); padding:40px; border:1px solid var(--border-color); }
+h1 { color:var(--primary); font-size:1.8rem; margin-bottom:8px; border-bottom:2px solid var(--primary-light); padding-bottom:10px; }
+h2 { color:var(--primary-light); font-size:1.3rem; margin-top:30px; margin-bottom:15px; }
+h3 { color:var(--text-main); font-size:1.1rem; margin-top:20px; margin-bottom:10px; }
+p { margin-bottom:15px; }
+ul { margin-bottom:15px; padding-left:20px; }
+li { margin-bottom:8px; }
+code { background:#EEF2FF; padding:2px 5px; border-radius:5px; color:#3730A3; }
+.metadata-box { background-color:#F8FAFC; border-left:4px solid var(--primary); padding:15px; margin-bottom:30px; border-radius:0 var(--radius) var(--radius) 0; }
+.metadata-box p { margin-bottom:5px; font-size:0.95rem; }
+.metadata-box strong { color:var(--primary); }
+.quote { background-color:#F1F5F9; font-style:italic; padding:15px; border-radius:var(--radius); margin:15px 0; color:#475569; }
+.checkbox-list { list-style:none; padding-left:0; }
+.checkbox-list li { display:flex; align-items:flex-start; margin-bottom:10px; }
+.checkbox-list li::before { content:'☐'; font-size:1.2rem; margin-right:10px; color:var(--primary-light); line-height:1.2; }
+table { width:100%; border-collapse:collapse; margin:14px 0 18px; font-size:.94rem; }
+th, td { border:1px solid var(--border-color); padding:9px; vertical-align:top; }
+th { background:#F1F5F9; color:var(--primary); text-align:left; }
+a.button { display:inline-block; background:#0F3B82; color:white; padding:10px 14px; border-radius:8px; text-decoration:none; font-weight:700; margin:8px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<h1>Guía de Procedimiento del Investigador</h1>
+<p style="font-size:1.1rem; color:var(--text-muted); margin-bottom:25px;">HADES por Voz — Evaluación de agente doméstico con memoria contextual</p>
+
+<div class="metadata-box">
+<p><strong>Estudio:</strong> Evaluación de HADES por Voz frente a la experiencia previa con asistentes tradicionales.</p>
+<p><strong>Código de Proyecto:</strong> HADES-VOZ-PF3311-E2-2026</p>
+<p><strong>Investigador:</strong> Henry Campos Navarro — C21636</p>
+<p><strong>Unidad Ejecutora:</strong> Universidad de Costa Rica, Escuela de Ciencias de la Computación e Informática</p>
+<p><strong>Curso:</strong> PF-3311 Agentes Virtuales Inteligentes</p>
+</div>
+
+<h2>1. Resumen del Estudio y Preparación</h2>
+<p>Esta guía detalla el protocolo para evaluar la interacción de los participantes con HADES por Voz, un agente virtual doméstico conversacional con memoria contextual y detección de patrones. La sesión compara la experiencia directa con HADES contra la experiencia previa reportada por el participante con asistentes tradicionales como Alexa, Google Home o Siri.</p>
+
+<h3>1.1 Checklist de Materiales</h3>
+<ul class="checkbox-list">
+<li>Formulario de consentimiento informado impreso o digital.</li>
+<li>Computadora configurada con el prototipo de HADES por Voz.</li>
+<li>Audífonos y micrófono funcionales, si aplica.</li>
+<li>Formulario breve sobre experiencia previa con asistentes tradicionales.</li>
+<li>Formulario UEQ para experiencia general del usuario.</li>
+<li>Cuestionario propio sobre memoria contextual, naturalidad, utilidad, proactividad e invasividad.</li>
+<li>Bitácora del investigador con ID anónimo del participante.</li>
+<li>Carpeta segura para logs anonimizados y patrones detectados.</li>
+</ul>
+
+<h2>2. Inducción y Bienvenida</h2>
+
+<h3>2.1 Consentimiento Informado</h3>
+<p><strong>Saludo:</strong></p>
+<div class="quote">"Hola, muchas gracias por participar. Mi nombre es Henry Campos y seré el investigador encargado de esta sesión. Hoy evaluaremos una Prueba de Concepto de un agente virtual doméstico conversacional llamado HADES por Voz."</div>
+
+<p><strong>Entrega del Consentimiento:</strong></p>
+<div class="quote">"Vamos a revisar el consentimiento informado. Es importante que sepa que su participación es voluntaria y que puede retirarse en cualquier momento sin ninguna consecuencia. Los registros de conversación se guardarán bajo un ID anónimo y no bajo su nombre legal."</div>
+
+<p><strong>Al terminar de leer:</strong></p>
+<div class="quote">“Después de leer el consentimiento, ¿todavía desea participar del estudio?”</div>
+
+<p><strong>Si la respuesta es afirmativa:</strong> Solicitar la firma o aceptación correspondiente. Asignar un ID anónimo en formato <code>P001</code>, <code>P002</code>, etc. El nombre legal solo debe quedar asociado al consentimiento, no a los logs ni cuestionarios.</p>
+
+<h3>2.2 Condición del Estudio y Baseline</h3>
+<p>En esta Prueba de Concepto, todos los participantes interactúan con la condición experimental: HADES por Voz. La condición de control o baseline corresponde a la experiencia previa reportada con asistentes tradicionales como Alexa, Google Home o Siri. El investigador debe registrar esta experiencia antes de iniciar la interacción con HADES.</p>
+
+<ul>
+<li><strong>Condición A:</strong> HADES por Voz con memoria contextual y detección de patrones.</li>
+<li><strong>Condición B:</strong> Experiencia previa reportada con asistentes tradicionales de comandos directos.</li>
+</ul>
+
+
+<h3>2.3 Cuestionarios Iniciales</h3>
+<p>Solicite al participante completar un cuestionario breve de perfil y experiencia previa. Preguntas sugeridas:</p>
+<ul>
+<li>¿Ha usado Alexa, Google Home, Siri u otros asistentes?</li>
+<li>¿Para qué tareas los usa o los ha usado?</li>
+<li>¿Los percibe como sistemas de comandos, asistentes conversacionales o ambos?</li>
+<li>¿Siente que esos asistentes recuerdan o entienden sus rutinas personales?</li>
+</ul>
+
+<h2>3. Fase de Interacción en Laboratorio</h2>
+
+<h3>3.1 Instrucciones y Prueba de Audio</h3>
+<p><strong>Investigador:</strong></p>
+<div class="quote">"A continuación, interactuará con HADES por Voz durante aproximadamente 10 a 20 minutos. El objetivo es conversar sobre actividades cotidianas, hábitos, intereses, rutinas generales y formas de organizar el día. No hay respuestas correctas o incorrectas; responda con naturalidad."</div>
+
+<p>Si la sesión usa voz, realice una prueba rápida para asegurarse de que el micrófono capta la voz correctamente y que el volumen de los audífonos es adecuado.</p>
+
+<p><strong>Explicación de la tarea:</strong></p>
+<div class="quote">"Durante la conversación puede mencionar horarios de estudio o trabajo, descanso, sueño, consumo de café, actividades en casa, intereses personales o situaciones en las que su rutina cambia. Al final, el sistema mostrará algunos patrones detectados para que usted los revise."</div>
+
+<h3>3.2 Desarrollo de la Sesión</h3>
+<p>El investigador se retira de la vista del participante o evita intervenir para no sesgar la interacción. Se deja al participante conversar libremente con HADES durante el tiempo estipulado. El sistema debe guardar el log bajo el ID anónimo asignado.</p>
+
+<h3>3.3 Revisión de Patrones Detectados</h3>
+<p>Al terminar la conversación, HADES presenta una lista de patrones detectados. El participante evalúa cada patrón como correcto, parcialmente correcto o incorrecto, e indica si lo considera útil o invasivo.</p>
+
+<table>
+<tr><th>Patrón detectado</th><th>Correcto</th><th>Útil</th><th>Invasivo</th></tr>
+<tr><td>Ejemplo: “Suele estudiar en la noche”.</td><td>Sí / Parcial / No</td><td>Sí / No</td><td>Sí / No</td></tr>
+<tr><td>Ejemplo: “El café se asocia con mantenerse activo”.</td><td>Sí / Parcial / No</td><td>Sí / No</td><td>Sí / No</td></tr>
+</table>
+
+<h2>4. Cierre del Estudio y Recolección de Datos</h2>
+
+<h3>4.1 Cuestionarios Post-Interacción</h3>
+<p>Una vez finalizada la interacción y la revisión de patrones, el investigador solicita completar los instrumentos post-interacción.</p>
+
+<p><strong>Investigador:</strong></p>
+<div class="quote">"¡Excelente! Ahora le pediré que llene dos instrumentos breves sobre su experiencia: el UEQ y un cuestionario propio sobre memoria contextual, utilidad, naturalidad, proactividad, invasividad y comparación con asistentes tradicionales."</div>
+
+<ul>
+<li><strong>UEQ:</strong> experiencia general del usuario.</li>
+<li><strong>Cuestionario propio:</strong> memoria contextual, utilidad, naturalidad, proactividad, invasividad y comparación con Alexa, Google Home o Siri.</li>
+</ul>
+
+<h3>4.2 Entrevista Cualitativa Breve</h3>
+<p>Para profundizar en la percepción del usuario, realice una entrevista breve. Si se graba audio, solicite permiso explícito. Preguntas sugeridas:</p>
+
+<div class="metadata-box">
+<ul>
+<li>"¿Cómo describiría su experiencia conversando con HADES?"</li>
+<li>"¿Qué patrón detectado le pareció más correcto o útil?"</li>
+<li>"¿Hubo algún patrón que le pareciera incorrecto?"</li>
+<li>"¿Hubo alguna interpretación que le pareciera invasiva o demasiado personal?"</li>
+<li>"¿En qué se sintió diferente HADES respecto a Alexa, Google Home o Siri?"</li>
+<li>"¿Qué tendría que mejorar HADES para que usted lo usara en un hogar real?"</li>
+</ul>
+</div>
+
+<h3>4.3 Despedida</h3>
+<p>Detenga cualquier grabación, si aplica. Agradezca el tiempo y participación.</p>
+<p><strong>Investigador:</strong></p>
+<div class="quote">"Muchas gracias por su tiempo y participación. Sus respuestas ayudarán a evaluar cómo diseñar un agente doméstico conversacional útil, natural y respetuoso de la privacidad."</div>
+
+<h2>5. Gestión Final de Datos y Respaldo</h2>
+<p>Inmediatamente después de que el participante termine la sesión:</p>
+<ul>
+<li><strong>Almacenamiento seguro:</strong> Verifique que el log de conversación y los patrones detectados se hayan guardado correctamente bajo el ID anónimo.</li>
+<li><strong>Anonimización:</strong> Confirme que los datos y encuestas estén vinculados únicamente al ID del participante y no al nombre legal.</li>
+<li><strong>Convención de nombres:</strong> Use nombres como <code>P001_log.txt</code> y <code>P001_patterns.json</code>.</li>
+<li><strong>Repositorio:</strong> No suba logs reales ni datos personales a GitHub. Use solo ejemplos ficticios o completamente anonimizados.</li>
+<li><strong>Limpieza:</strong> Cierre la sesión del prototipo y prepare el equipo para el siguiente participante.</li>
+</ul>
+</div>
+</div>
+</body>
+</html>
