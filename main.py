@@ -1,25 +1,9 @@
 from config.settings import Settings
-from agent.gemini_client import GeminiTextClient
-from agent.conversation_agent import ConversationAgent
+from agent.llm_factory import create_text_client
+from agent.hades_assistant import HadesAssistant
 from memory.memory_manager import MemoryManager
 from pattern_extraction.pattern_extractor import PatternExtractor
-from interpretation.context_interpreter import ContextInterpreter
-from voice.tts import GeminiTTS
 
-def ensure_profile(memory_manager: MemoryManager) -> bool:
-    if memory_manager.has_active_profile():
-        return True
-
-    print("\nNo hay perfil activo todavía.")
-    profile_name = input("¿Qué perfil querés usar o crear?: ").strip()
-
-    if not profile_name:
-        print("No se seleccionó ningún perfil.")
-        return False
-
-    memory_manager.set_profile(profile_name)
-    print(f"Perfil activo: {memory_manager.get_active_profile_name()}")
-    return True
 
 def print_header():
     print("\n" + "=" * 64)
@@ -27,98 +11,93 @@ def print_header():
     print("=" * 64)
 
 
-def main():
-    settings = Settings()
+def create_profile(memory_manager: MemoryManager) -> None:
+    profile_name = input("\nNombre de la persona: ").strip()
+    if not profile_name:
+        print("No se creó ningún perfil.")
+        return
 
-    if not settings.gemini_api_key:
-        print("No se encontró GEMINI_API_KEY en .env")
+    memory_manager.set_profile(profile_name)
+    print(f"Perfil creado/cargado: {memory_manager.get_active_profile_name()}")
 
 
-    gemini = GeminiTextClient(settings)
-    memory_manager = MemoryManager(settings)
-    extractor = PatternExtractor(gemini)
-    interpreter = ContextInterpreter(gemini)
-    tts = GeminiTTS(settings)
+def show_profiles(memory_manager: MemoryManager) -> list[str]:
+    profiles = memory_manager.list_profiles()
+    if not profiles:
+        print("\nTodavía no hay perfiles guardados.")
+        return []
 
-    conversation_agent = ConversationAgent(
+    print("\nPerfiles existentes:")
+    for idx, profile in enumerate(profiles, start=1):
+        print(f"{idx}. {profile}")
+    return profiles
+
+
+def run_hades_mode(settings: Settings, llm, memory_manager: MemoryManager, extractor: PatternExtractor) -> None:
+    assistant = HadesAssistant(
+        settings=settings,
+        llm=llm,
         memory_manager=memory_manager,
         extractor=extractor,
-        tts=tts,
-        logs_dir=settings.logs_dir,
     )
+    assistant.run_until_menu()
+
+
+def main():
+    settings = Settings()
+    memory_manager = MemoryManager(settings)
+
+    print("\nInicializando LLM...")
+    llm = create_text_client(settings)
+    extractor = PatternExtractor(llm)
 
     while True:
         print_header()
-        print(f"Perfil activo: {memory_manager.get_active_profile_name()}")
-        print("1. Conversación inicial para aprender patrones")
-        print("2. Probar una situación actual")
-        print("3. Ver memoria JSON")
-        print("4. Probar TTS")
-        print("5. Cambiar o crear perfil")
-        print("6. Ver perfiles existentes")
-        print("7. Salir")
+        print("1. Modo HADES")
+        print("2. Crear perfil")
+        print("3. Usar perfil")
+        print("4. Ver perfiles")
+        print("5. Salir")
 
         option = input("\nOpción: ").strip()
 
         if option == "1":
-            conversation_agent.run_initial_conversation()
+            memory_manager.set_profile("General")
+            print("\nEntrando a Modo HADES con perfil General.")
+            run_hades_mode(settings, llm, memory_manager, extractor)
 
         elif option == "2":
-            if not ensure_profile(memory_manager):
-                continue
-            current_context = input(
-                "\nDescriba la situación actual. Ejemplo: "
-                "Son las 9:40 PM, llegué tarde, tomé café y mañana tengo agenda libre.\n\nSituación: "
-            ).strip()
-
-            memory = memory_manager.load_memory()
-            result = interpreter.interpret(memory, current_context)
-
-            print("\n--- Interpretación de HADES ---")
-            print(f"Desviación detectada: {result.get('deviation_detected')}")
-            print(f"Razón: {result.get('deviation_reason')}")
-            print("\nHipótesis:")
-            for h in result.get("hypotheses", []):
-                print(f"- ({h.get('confidence')}) {h.get('hypothesis')}")
-
-            response = result.get("agent_response", "No pude generar una respuesta final.")
-            print(f"\nHADES: {response}")
-            tts.speak(response, filename="hades_context_response.wav")
+            create_profile(memory_manager)
 
         elif option == "3":
-            if not ensure_profile(memory_manager):
+            profiles = show_profiles(memory_manager)
+            if not profiles:
                 continue
 
-            print("\n--- Memoria actual ---")
-            print(memory_manager.pretty_memory())
+            choice = input("\nElegí el número del perfil, o 0 para volver: ").strip()
+            if choice == "0":
+                continue
+
+            try:
+                index = int(choice) - 1
+                selected = profiles[index]
+            except (ValueError, IndexError):
+                print("Opción inválida.")
+                continue
+
+            memory_manager.set_profile(selected)
+            print(f"\nEntrando a Modo HADES con perfil: {selected}")
+            run_hades_mode(settings, llm, memory_manager, extractor)
 
         elif option == "4":
-            text = input("\nTexto para que HADES lo diga: ").strip()
-            print(f"\nHADES: {text}")
-            tts.speak(text, filename="hades_tts_test.wav")
+            show_profiles(memory_manager)
 
         elif option == "5":
-            profile_name = input("\nNombre del perfil a usar o crear: ").strip()
-
-            if profile_name:
-                memory_manager.set_profile(profile_name)
-                print(f"Perfil activo: {memory_manager.get_active_profile_name()}")
-            else:
-                print("No se cambió el perfil.")
-
-        elif option == "6":
-            profiles = memory_manager.list_profiles()
-
-            if not profiles:
-                print("\nTodavía no hay perfiles guardados.")
-            else:
-                print("\nPerfiles existentes:")
-                for profile in profiles:
-                    print(f"- {profile}")
-
-        elif option == "7":
-            print("\nCerrando HADES")
+            print("\nCerrando HADES. Memoria guardada.")
             break
+
+        else:
+            print("Opción inválida.")
 
 
 if __name__ == "__main__":

@@ -1,12 +1,12 @@
 import json
+from typing import Any
 
-from agent.gemini_client import GeminiTextClient
 from agent.prompts import HADES_SYSTEM_STYLE, INTERPRETATION_SCHEMA
 
 
 class ContextInterpreter:
-    def __init__(self, gemini: GeminiTextClient):
-        self.gemini = gemini
+    def __init__(self, llm: Any):
+        self.llm = llm
 
     def interpret(self, memory: dict, current_context: str) -> dict:
         prompt = f"""
@@ -30,8 +30,9 @@ Instrucciones:
 - Detectá señales de desviación.
 - Generá hipótesis, no diagnósticos.
 - La respuesta final debe sonar natural y útil, no robótica.
+- Si no hay memoria suficiente, reconocelo y preguntá suavemente.
 
 Formato requerido:
 {INTERPRETATION_SCHEMA}
 """
-        return self.gemini.generate_json(prompt)
+        return self.llm.generate_json(prompt, temperature=0.1)
