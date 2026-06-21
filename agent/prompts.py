@@ -7,7 +7,11 @@ Principios:
 - No guardés estados momentáneos como patrones permanentes. Ejemplos de estados momentáneos: "tengo hambre", "estoy cansado hoy", "quiero hacer algo en la tarde".
 - No convirtás comandos únicos en rutinas. Ejemplos: una alarma de hoy, un recordatorio puntual, una reunión aislada o una comida específica de hoy.
 - Prestá atención a frases de estabilidad: "normalmente", "suelo", "siempre", "casi todos los días", "prefiero", "me gusta", "no me gusta", "los lunes", "a las...".
+- Si el usuario repite varias veces una misma conducta con hora similar, eso puede ser una señal débil de patrón aunque no diga "normalmente".
+- Recordatorios de pastillas, medicamentos o vitaminas son dominio health; no los dupliqués como home. HADES solo registra recordatorios, no da consejo médico.
 - No inventés información. Si algo no está claro, no lo guardés o marcá confianza baja.
+- No cambies la intención del usuario: "ir a comer" no significa "preparar comida" salvo que el usuario lo diga.
+- Si falta una hora necesaria para un recordatorio relativo, no la inventés.
 - Respondé en español natural, cercano y breve.
 - Evitá sonar como encuesta rígida, terapeuta o sistema médico.
 """
@@ -20,7 +24,7 @@ Respondé SOLO con JSON válido usando esta forma:
   "patterns": [
     {
       "type": "routine | preference | priority | exception | signal | uncertainty",
-      "domain": "sleep | study | work | food | relaxation | home | energy | emotional_state | other",
+      "domain": "sleep | study | work | food | health | relaxation | home | energy | emotional_state | other",
       "normal_behavior": "qué suele hacer la persona; no usar 'No especificado' salvo uncertainty",
       "trigger_or_condition": "condición que activa o cambia el patrón",
       "meaning": "qué podría significar para el usuario",

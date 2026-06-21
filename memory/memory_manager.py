@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +32,12 @@ class MemoryManager:
             memory = self.load_memory()
             self.save_memory(memory)
 
+    def _ensure_active_profile(self) -> None:
+        # Default defensivo para pruebas o usos internos donde se llama load_memory()
+        # antes de seleccionar perfil. El menú principal sigue seleccionando perfil explícitamente.
+        if not self.path or not self.profile_name:
+            self.set_profile("General")
+
     def has_active_profile(self) -> bool:
         return self.profile_name is not None and self.path is not None
 
@@ -58,7 +64,7 @@ class MemoryManager:
 
     def _ensure_schema(self, memory: dict[str, Any]) -> dict[str, Any]:
         profile = memory.setdefault("user_profile", {})
-        profile.setdefault("name", self.profile_name or "Usuario")
+        profile.setdefault("name", self.profile_name or "General")
         profile.setdefault("profile_summary", "")
         profile.setdefault("patterns", [])
         profile.setdefault("open_questions", [])
@@ -72,8 +78,11 @@ class MemoryManager:
         return memory
 
     def load_memory(self) -> dict[str, Any]:
-        if not self.path:
-            raise RuntimeError("No hay perfil activo. Primero definí un nombre de perfil.")
+        self._ensure_active_profile()
+        assert self.path is not None
+
+        if not self.path.exists():
+            self.save_memory(self.empty_memory(self.profile_name or "General"))
 
         with self.path.open("r", encoding="utf-8") as f:
             memory = json.load(f)
@@ -81,8 +90,8 @@ class MemoryManager:
         return self._ensure_schema(memory)
 
     def save_memory(self, memory: dict[str, Any]) -> None:
-        if not self.path:
-            raise RuntimeError("No hay perfil activo. Primero definí un nombre de perfil.")
+        self._ensure_active_profile() if self.path is None else None
+        assert self.path is not None
 
         memory = self._ensure_schema(memory)
         memory.setdefault("metadata", {})
@@ -91,22 +100,23 @@ class MemoryManager:
         with self.path.open("w", encoding="utf-8") as f:
             json.dump(memory, f, indent=2, ensure_ascii=False)
 
-
     STABILITY_CUES = [
         "normalmente", "suelo", "suele", "siempre", "casi siempre", "usualmente",
         "por lo general", "cada dia", "cada día", "todos los dias", "todos los días",
         "entre semana", "los lunes", "los martes", "los miercoles", "los miércoles",
         "los jueves", "los viernes", "los sabados", "los sábados", "los domingos",
         "prefiero", "me gusta", "no me gusta", "me interesa", "me sirve", "me cuesta",
-        "tengo rutina", "mi rutina", "a menudo", "frecuentemente", "todos los días", "dias laborales",
-        "días laborales", "lunes a viernes", "entre semana", "cada mañana", "todas las mañanas",
+        "tengo rutina", "mi rutina", "a menudo", "frecuentemente", "dias laborales",
+        "días laborales", "lunes a viernes", "cada mañana", "todas las mañanas",
         "todos los dias laborales", "todos los días laborales",
+        "repetido", "repetida", "repetidamente", "varias veces", "dos veces",
     ]
 
     ONE_OFF_ACTION_CUES = [
         "alarma", "recordatorio", "recordame", "recuérdame", "acordame", "avísame", "avisame",
-        "hoy", "mañana", "esta tarde", "esta noche", "ahorita", "luego", "más tarde", "mas tarde",
-        "reunion", "reunión", "cliente", "cita", "cocinar", "empezar", "poner", "encender", "apagar",
+        "hoy", "mañana", "esta tarde", "esta noche", "ahorita", "ahora", "luego", "más tarde", "mas tarde",
+        "reunion", "reunión", "cliente", "cita", "cocinar", "preparar", "empezar", "poner",
+        "encender", "apagar", "salir", "ir a comer",
     ]
 
     @classmethod
@@ -128,26 +138,23 @@ class MemoryManager:
         importance = cls._normalize_text(str(pattern.get("importance", "")))
         confidence = cls._normalize_text(str(pattern.get("confidence", "")))
 
-        # Señales e incertidumbres suelen ser momentáneas; no las guardamos salvo que sean muy claras.
         if ptype in {"signal", "uncertainty"}:
             return any(cue in combined for cue in cls.STABILITY_CUES) and confidence == "high"
 
         has_stability_cue = any(cue in combined for cue in cls.STABILITY_CUES)
         has_one_off_cue = any(cue in combined for cue in cls.ONE_OFF_ACTION_CUES)
 
-        # Si parece tarea/alarma/plan de una sola vez y no tiene lenguaje de rutina, no es patrón.
         if has_one_off_cue and not has_stability_cue:
             return False
 
-        # No guardar cosas genéricas sin comportamiento normal.
         if not normal_behavior or cls._normalize_text(normal_behavior) in {"no especificado", "n/a", "ninguno"}:
             return False
 
-        # Preferimos baja agresividad: sin señal de estabilidad, solo guardamos preferencias explícitas.
         if not has_stability_cue:
-            return ptype == "preference" and any(cue in combined for cue in ["prefiero", "me gusta", "no me gusta", "me interesa"])
+            return ptype == "preference" and any(
+                cue in combined for cue in ["prefiero", "me gusta", "no me gusta", "me interesa"]
+            )
 
-        # Evitar que el LLM marque todo como medio/alto sin base.
         if importance == "high" and confidence != "high":
             pattern["importance"] = "medium"
 
@@ -185,8 +192,6 @@ class MemoryManager:
             existing_keys.add(key)
             accepted_new_patterns += 1
 
-        # Actualizar profile_summary solo cuando sí aceptamos patrones estables.
-        # Esto evita que comandos puntuales como alarmas o hambre momentánea contaminen el resumen.
         new_summary = str(extraction.get("profile_summary", "")).strip()
         if new_summary and accepted_new_patterns > 0:
             old_summary = profile.get("profile_summary", "").strip()
@@ -197,8 +202,6 @@ class MemoryManager:
             )
 
         open_questions = profile.setdefault("open_questions", [])
-
-        # Mantener pocas preguntas abiertas. La evaluación se hace conversando, no llenando memoria.
         for question in (extraction.get("open_questions", []) or [])[:1]:
             if isinstance(question, str) and question not in open_questions and len(open_questions) < 4:
                 open_questions.append(question)
@@ -237,11 +240,44 @@ class MemoryManager:
         self.save_memory(memory)
         return memory
 
-    def update_last_proposed_action(self, status: str, note: str | None = None) -> dict[str, Any] | None:
+    @staticmethod
+    def _parse_action_time(value: Any) -> datetime | None:
+        if not isinstance(value, str) or not value.strip():
+            return None
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+
+    @classmethod
+    def _is_recent_action(cls, action: dict[str, Any], max_age_minutes: int) -> bool:
+        created_at = cls._parse_action_time(action.get("created_at"))
+        if not created_at:
+            return False
+        return datetime.now() - created_at <= timedelta(minutes=max_age_minutes)
+
+    def get_recent_pending_action(self, max_age_minutes: int = 10) -> dict[str, Any] | None:
         memory = self.load_memory()
         actions = memory.setdefault("user_profile", {}).setdefault("action_history", [])
         for action in reversed(actions):
-            if action.get("status") == "proposed":
+            if not isinstance(action, dict):
+                continue
+            if action.get("status") == "proposed" and self._is_recent_action(action, max_age_minutes):
+                return action
+        return None
+
+    def update_last_proposed_action(
+        self,
+        status: str,
+        note: str | None = None,
+        max_age_minutes: int = 10,
+    ) -> dict[str, Any] | None:
+        memory = self.load_memory()
+        actions = memory.setdefault("user_profile", {}).setdefault("action_history", [])
+        for action in reversed(actions):
+            if not isinstance(action, dict):
+                continue
+            if action.get("status") == "proposed" and self._is_recent_action(action, max_age_minutes):
                 action["status"] = status
                 action["resolved_at"] = datetime.now().isoformat(timespec="seconds")
                 if note:
@@ -250,10 +286,112 @@ class MemoryManager:
                 return action
         return None
 
-    def has_pending_action(self) -> bool:
+    def has_pending_action(self, max_age_minutes: int = 10) -> bool:
+        return self.get_recent_pending_action(max_age_minutes=max_age_minutes) is not None
+
+
+
+    def remove_last_action(self) -> dict[str, Any] | None:
+        """Elimina la última acción guardada en action_history y devuelve una copia."""
         memory = self.load_memory()
         actions = memory.setdefault("user_profile", {}).setdefault("action_history", [])
-        return any(action.get("status") == "proposed" for action in actions)
+        for idx in range(len(actions) - 1, -1, -1):
+            action = actions[idx]
+            if isinstance(action, dict):
+                removed = actions.pop(idx)
+                self.save_memory(memory)
+                return removed
+        return None
+
+    def remove_last_pattern(self) -> dict[str, Any] | None:
+        """Elimina el último patrón guardado y devuelve una copia."""
+        memory = self.load_memory()
+        patterns = memory.setdefault("user_profile", {}).setdefault("patterns", [])
+        for idx in range(len(patterns) - 1, -1, -1):
+            pattern = patterns[idx]
+            if isinstance(pattern, dict):
+                removed = patterns.pop(idx)
+                self.save_memory(memory)
+                return removed
+        return None
+
+    def remove_last_memory_item(self) -> tuple[str, dict[str, Any]] | None:
+        """Elimina el último elemento de memoria útil: acción o patrón.
+
+        Se usa para comandos como "olvida eso". No borra conversation_history,
+        porque la conversación funciona como registro de auditoría de la sesión.
+        """
+        memory = self.load_memory()
+        profile = memory.setdefault("user_profile", {})
+        actions = profile.setdefault("action_history", [])
+        patterns = profile.setdefault("patterns", [])
+
+        last_action_idx = next((i for i in range(len(actions) - 1, -1, -1) if isinstance(actions[i], dict)), None)
+        last_pattern_idx = next((i for i in range(len(patterns) - 1, -1, -1) if isinstance(patterns[i], dict)), None)
+
+        if last_action_idx is None and last_pattern_idx is None:
+            return None
+        if last_pattern_idx is None:
+            removed = actions.pop(last_action_idx)
+            self.save_memory(memory)
+            return "action", removed
+        if last_action_idx is None:
+            removed = patterns.pop(last_pattern_idx)
+            self.save_memory(memory)
+            return "pattern", removed
+
+        action_time = self._parse_action_time(actions[last_action_idx].get("created_at")) or datetime.min
+        pattern_time = self._parse_action_time(patterns[last_pattern_idx].get("created_at")) or datetime.min
+        # Si empatan en el mismo segundo, preferimos patrón: normalmente se extrae
+        # después de la acción dentro del mismo turno y "olvida eso" suele apuntar
+        # a lo último que el sistema aprendió.
+        if pattern_time >= action_time:
+            removed = patterns.pop(last_pattern_idx)
+            self.save_memory(memory)
+            return "pattern", removed
+        removed = actions.pop(last_action_idx)
+        self.save_memory(memory)
+        return "action", removed
+
+    def list_actions(
+        self,
+        action_types: set[str] | None = None,
+        limit: int | None = 10,
+        include_rejected: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Devuelve acciones guardadas con índice real dentro de action_history.
+
+        El índice se mantiene para poder referenciar/actualizar/cancelar una acción
+        concreta si el usuario escoge una opción de la lista.
+        """
+        memory = self.load_memory()
+        actions = memory.setdefault("user_profile", {}).setdefault("action_history", [])
+        out: list[dict[str, Any]] = []
+        for idx, action in enumerate(actions):
+            if not isinstance(action, dict):
+                continue
+            action_type = str(action.get("type", "")).strip().lower()
+            status = str(action.get("status", "")).strip().lower()
+            if action_types is not None and action_type not in action_types:
+                continue
+            if not include_rejected and status == "rejected":
+                continue
+            item = dict(action)
+            item["_memory_index"] = idx
+            out.append(item)
+        if limit is not None:
+            out = out[-limit:]
+        return out
+
+    def update_action_at_index(self, index: int, updates: dict[str, Any]) -> dict[str, Any] | None:
+        memory = self.load_memory()
+        actions = memory.setdefault("user_profile", {}).setdefault("action_history", [])
+        if not (0 <= index < len(actions)) or not isinstance(actions[index], dict):
+            return None
+        actions[index].update(updates)
+        actions[index]["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        self.save_memory(memory)
+        return dict(actions[index])
 
     def recent_conversation_history(self, limit: int = 8) -> list[dict[str, Any]]:
         memory = self.load_memory()
@@ -266,9 +404,7 @@ class MemoryManager:
 
     def list_profiles(self) -> list[str]:
         profiles = []
-
         for file in self.memory_dir.glob("_*.json"):
             name = file.stem.removeprefix("_")
             profiles.append(name)
-
         return sorted(profiles)

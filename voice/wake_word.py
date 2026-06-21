@@ -24,7 +24,8 @@ class WakeWordListener:
         openwakeword.utils.download_models()
         self.model = Model(wakeword_models=[self.wake_word])
 
-    def wait_for_wake_word(self) -> float:
+    def wait_for_wake_word(self, cancel_event: threading.Event | None = None) -> float | None:
+        cancel_event = cancel_event or threading.Event()
         event = threading.Event()
         detected_score = {"value": 0.0}
 
@@ -32,7 +33,7 @@ class WakeWordListener:
             if status:
                 print(status)
 
-            if event.is_set():
+            if event.is_set() or cancel_event.is_set():
                 return
 
             audio = (indata[:, 0] * 32767).astype(np.int16)
@@ -51,8 +52,13 @@ class WakeWordListener:
             dtype="float32",
             callback=callback,
         ):
-            while not event.is_set():
+            while not event.is_set() and not cancel_event.is_set():
                 sd.sleep(100)
+
+        if cancel_event.is_set() and not event.is_set():
+            if hasattr(self.model, "reset"):
+                self.model.reset()
+            return None
 
         time.sleep(self.cooldown_seconds)
         if hasattr(self.model, "reset"):

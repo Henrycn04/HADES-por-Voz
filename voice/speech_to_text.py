@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import queue
 import time
+import threading
 from collections import deque
 
 import numpy as np
@@ -29,8 +30,11 @@ class WhisperSTT:
             self._model = whisper.load_model(self.settings.whisper_model)
         return self._model
 
-    def record_command(self, seconds: int | None = None, prefix: str = "command") -> Path:
+    def record_command(self, seconds: int | None = None, prefix: str = "command", cancel_event: threading.Event | None = None) -> Path | None:
+        cancel_event = cancel_event or threading.Event()
         seconds = seconds or self.record_seconds
+        if cancel_event.is_set():
+            return None
         print(f"[STT] Grabando comando por {seconds} segundos...")
         recording = sd.rec(
             int(seconds * self.sample_rate),
@@ -40,18 +44,22 @@ class WhisperSTT:
             device=self.device_id,
         )
         sd.wait()
+        if cancel_event.is_set():
+            print("[STT] Grabación cancelada.")
+            return None
 
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         audio_path = self.audio_in_dir / f"{prefix}_{stamp}.wav"
         sf.write(audio_path, recording, self.sample_rate)
         return audio_path
 
-    def record_until_silence(self, prefix: str = "command") -> Path | None:
+    def record_until_silence(self, prefix: str = "command", cancel_event: threading.Event | None = None) -> Path | None:
         """
         Graba sin duración fija usando callback, igual que el wake word.
         En algunos dispositivos de Windows, stream.read() puede devolver silencio,
         aunque el callback sí recibe audio real. Por eso usamos una cola de frames.
         """
+        cancel_event = cancel_event or threading.Event()
         frame_seconds = 0.10
         frame_samples = int(self.sample_rate * frame_seconds)
         threshold = self.settings.voice_energy_threshold
@@ -67,6 +75,8 @@ class WhisperSTT:
         def callback(indata, frames, time_info, status):
             if status:
                 print(status)
+            if cancel_event.is_set():
+                return
             audio_queue.put(np.asarray(indata, dtype=np.float32).copy())
 
         chunks: list[np.ndarray] = []
@@ -94,10 +104,16 @@ class WhisperSTT:
             callback=callback,
         ):
             while True:
+                if cancel_event.is_set():
+                    print("[STT] Escucha cancelada.")
+                    return None
                 try:
                     frame = audio_queue.get(timeout=0.25)
                 except queue.Empty:
                     now = time.monotonic()
+                    if cancel_event.is_set():
+                        print("[STT] Escucha cancelada.")
+                        return None
                     if not started and now - wait_started_at >= start_timeout:
                         print(
                             "[STT] No detecté voz. Volviendo a modo pasivo. "
@@ -157,6 +173,10 @@ class WhisperSTT:
                 if recorded_seconds >= min_record and silence_seconds >= silence_timeout:
                     break
 
+        if cancel_event.is_set():
+            print("[STT] Grabación cancelada.")
+            return None
+
         if not chunks:
             return None
 
@@ -171,23 +191,33 @@ class WhisperSTT:
             )
         return audio_path
 
-    def transcribe(self, audio_path: Path) -> str:
+    def transcribe(self, audio_path: Path, cancel_event: threading.Event | None = None) -> str:
+        cancel_event = cancel_event or threading.Event()
+        if cancel_event.is_set():
+            return ""
         model = self._load_model()
         result = model.transcribe(
             str(audio_path),
             language=self.language,
             fp16=False,
         )
+        if cancel_event.is_set():
+            return ""
         return str(result.get("text", "")).strip()
 
-    def listen_command(self, seconds: int | None = None) -> tuple[str, Path | None]:
+    def listen_command(self, seconds: int | None = None, cancel_event: threading.Event | None = None) -> tuple[str, Path | None]:
+        cancel_event = cancel_event or threading.Event()
         if seconds is None:
-            audio_path = self.record_until_silence(prefix="wake_command")
+            audio_path = self.record_until_silence(prefix="wake_command", cancel_event=cancel_event)
             if audio_path is None:
                 return "", None
         else:
-            audio_path = self.record_command(seconds=seconds, prefix="wake_command")
+            audio_path = self.record_command(seconds=seconds, prefix="wake_command", cancel_event=cancel_event)
+            if audio_path is None:
+                return "", None
 
+        if cancel_event.is_set():
+            return "", None
         print("[STT] Transcribiendo...")
-        text = self.transcribe(audio_path)
+        text = self.transcribe(audio_path, cancel_event=cancel_event)
         return text, audio_path

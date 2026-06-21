@@ -83,6 +83,7 @@ class Settings:
     cue_sample_rate: int = _env_int("HADES_CUE_SAMPLE_RATE", 16000)
 
     # Wake word. Para pruebas usamos modelo preentrenado. Luego se puede cambiar a HADES personalizado.
+    enable_wake_word: bool = _env_bool("HADES_ENABLE_WAKE_WORD", True)
     wake_word: str = os.getenv("HADES_WAKE_WORD", "hey jarvis")
     wake_threshold: float = _env_float("HADES_WAKE_THRESHOLD", 0.85)
     wake_cooldown_seconds: float = _env_float("HADES_WAKE_COOLDOWN_SECONDS", 1.5)
