@@ -1,7 +1,7 @@
 # HADES por Voz
 
-**HADES por Voz** es un prototipo de asistente doméstico conversacional con memoria contextual.  
-El sistema está desarrollado en Python y se ejecuta de forma local, integrando entrada por voz, chat escrito, reconocimiento de voz, modelo de lenguaje local, síntesis de voz y memoria persistente por perfil de usuario.
+**HADES por Voz** es un prototipo funcional de asistente doméstico conversacional con memoria contextual.  
+El sistema está desarrollado en Python y se ejecuta de forma local, integrando interacción por voz y texto, activación por palabra clave, activación manual por teclado, reconocimiento de voz, modelo de lenguaje local, síntesis de voz y memoria persistente por perfil de usuario.
 
 El objetivo del proyecto es explorar cómo un agente doméstico puede ir más allá de responder comandos directos, aprendiendo patrones, hábitos y preferencias del usuario para ofrecer una interacción más natural, contextual y personalizada.
 
@@ -10,13 +10,32 @@ El objetivo del proyecto es explorar cómo un agente doméstico puede ir más al
 ## Enlaces del proyecto
 
 - **Repositorio:** https://github.com/Henrycn04/HADES-por-Voz
-- **Video de demostración:** https://youtu.be/-ljTmLNjrvM
+- **Video final de demostración:** https://youtu.be/tfBvssxGFTk?si=2AYXxT9mR6NuoTG1
+- **Artículo académico final:** `docs/HADES_por_Voz_Entregable_3.pdf`
 - **Documento del Entregable 2:** `docs/Entregable_2_HADES_por_Voz.pdf`
 - **Protocolo experimental:** `docs/Guia_Procedimiento_HADES_por_Voz.html`
 
 ---
 
-## Estado actual del prototipo
+## Entregable 3 – Entrega Final, Artículo Académico y Presentación de HADES por Voz
+
+Este repositorio corresponde a la versión final del proyecto para el curso **PF-3311 Agentes Virtuales Inteligentes**.
+
+El Entregable 3 incluye:
+
+- Prototipo funcional de HADES por Voz.
+- Artículo académico final en formato PDF.
+- Video final de demostración no listado en YouTube.
+- Evidencia de interacción con el agente.
+- Evaluación piloto exploratoria con usuarios.
+- Resultados descriptivos del cuestionario UEQ, cuestionario propio y revisión de logs anonimizados.
+- Discusión de limitaciones, conclusiones y trabajo futuro.
+
+El estudio realizado debe interpretarse como un **piloto exploratorio con n = 2**, no como una evaluación estadísticamente generalizable. El objetivo fue obtener evidencia inicial sobre la utilidad de la memoria contextual, la naturalidad de la interacción, la percepción de control y los límites del prototipo.
+
+---
+
+## Estado final del prototipo
 
 La versión actual de HADES por Voz implementa una Prueba de Concepto funcional con los siguientes componentes:
 
@@ -37,8 +56,9 @@ La versión actual de HADES por Voz implementa una Prueba de Concepto funcional 
 - Comandos para olvidar o borrar información guardada incorrectamente.
 - Edición y cancelación simulada de alarmas y recordatorios.
 - Desambiguación cuando existen varias alarmas posibles.
+- Recuperación de contexto previo para responder preguntas sobre rutinas aprendidas.
 
-Actualmente el prototipo no controla dispositivos reales del hogar. Las acciones domésticas se simulan y se registran en memoria para demostrar la viabilidad de la arquitectura y la lógica de contextualización.
+Actualmente el prototipo **no controla dispositivos reales del hogar**. Las acciones domésticas se simulan y se registran en memoria para demostrar la viabilidad de la arquitectura y la lógica de contextualización.
 
 ---
 
@@ -48,7 +68,7 @@ HADES puede recibir entrada del usuario de tres formas.
 
 ### 1. Wake word
 
-El usuario puede activar el sistema diciendo la palabra clave configurada, actualmente:
+El usuario puede activar el sistema diciendo la palabra clave configurada:
 
 ```text
 Hey Jarvis
@@ -332,15 +352,26 @@ La segunda.
 
 ---
 
-## Funcionalidades pendientes
+## Limitaciones actuales
+
+- Las acciones domésticas son simuladas y no controlan dispositivos reales.
+- El reconocimiento de voz puede cometer errores en ambientes ruidosos o con frases ambiguas.
+- La interpretación temporal todavía requiere mejoras.
+- La revisión de memoria se realiza principalmente mediante JSON, no mediante una interfaz gráfica.
+- La evaluación realizada fue piloto exploratoria con n = 2, por lo que sus resultados no son generalizables.
+- El sistema requiere configuración local de dependencias, modelos y dispositivos de audio.
+
+---
+
+## Trabajo futuro
 
 - Integración con dispositivos reales del hogar.
-- Interfaz gráfica más amigable.
+- Interfaz gráfica más amigable para revisar memoria y patrones.
 - Mayor robustez ante errores de STT.
 - Validación automática más extensa de patrones aprendidos.
 - Exportación de sesiones de prueba.
 - Modo debug visual para mostrar intención, dominio y acción detectada.
-- Evaluación piloto con participantes.
+- Ampliación del estudio con más participantes y sesiones más largas.
 - Integración futura con sensores o módulos contextuales del hogar.
 
 ---
@@ -518,27 +549,6 @@ Resultado esperado:
 - La acción se registra en `action_history`.
 - La rutina puede registrarse como patrón en `patterns`.
 
-### Patrón por repetición
-
-Si el usuario menciona varias veces una conducta similar:
-
-```text
-Voy a dormir a las 10.
-```
-
-```text
-Hoy otra vez voy a dormir a las 10.
-```
-
-```text
-Me estoy acostando a las 10.
-```
-
-Resultado esperado:
-
-- HADES puede detectar una posible rutina de sueño.
-- El patrón se guarda o se consolida en `patterns`.
-
 ### Consulta posterior
 
 ```text
@@ -621,6 +631,7 @@ HADES-por-Voz/
 │   └── memorias y logs locales
 │
 ├── docs/
+│   ├── HADES_por_Voz_Entregable_3.pdf
 │   ├── Entregable_2_HADES_por_Voz.pdf
 │   ├── Guia_Procedimiento_HADES_por_Voz.html
 │   └── img/
@@ -639,6 +650,7 @@ HADES-por-Voz/
 HADES por Voz está diseñado como un prototipo local porque trabaja con información personal del usuario, como rutinas, preferencias, acciones y horarios. Por eso:
 
 - No se deben subir archivos `.env` al repositorio.
+- No se deben subir API keys ni credenciales.
 - No se deben subir memorias reales de usuarios.
 - No se deben subir logs personales.
 - La carpeta `records/` debe mantenerse fuera del repositorio si contiene datos reales.
@@ -653,6 +665,9 @@ Este prototipo forma parte del proyecto:
 
 **HADES por Voz: Agente Virtual Conversacional con Memoria Contextual para el Hogar**
 
+Curso: **PF-3311 Agentes Virtuales Inteligentes**  
+Universidad de Costa Rica, Escuela de Ciencias de la Computación e Informática.
+
 Las preguntas de investigación principales son:
 
 1. ¿Cómo influye la memoria contextual en la percepción de naturalidad y utilidad de un agente virtual doméstico?
@@ -663,18 +678,31 @@ Las preguntas de investigación principales son:
 
 ## Entregable 2
 
-El Entregable 2 incluye:
+El Entregable 2 incluyó:
 
 - Documento de avance en PDF.
 - Protocolo experimental en HTML.
 - Evidencia visual del prototipo.
-- Video de demostración.
+- Video de demostración inicial.
 - Diseño metodológico del estudio piloto.
 - Métricas, instrumentos y protocolos de interacción.
 
 ---
 
+## Entregable 3
+
+El Entregable 3 incluye:
+
+- Artículo académico final en PDF.
+- Video final de demostración.
+- Prototipo funcional actualizado.
+- Resultados de evaluación piloto.
+- Discusión de limitaciones y trabajo futuro.
+- Repositorio documentado para reproducción local.
+
+---
+
 ## Estado de desarrollo
 
-La versión actual corresponde a una PoC funcional con mejoras de interacción, memoria y manejo de comandos.  
-El sistema está preparado para pruebas controladas con participantes, manteniendo las acciones simuladas y la memoria contextual como los elementos centrales de evaluación.
+La versión actual corresponde a una PoC funcional final para el curso.  
+El sistema está preparado para demostración y evaluación académica, manteniendo las acciones simuladas y la memoria contextual como los elementos centrales del proyecto.
